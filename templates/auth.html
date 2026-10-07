@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="login-split-view">
+  {# Left Pane: Campus Building (Aryabhatta Block) + Branding (Screenshot 1) #}
+  <div class="login-hero-pane" style="background-image: linear-gradient(135deg, rgba(11,23,57,0.85) 0%, rgba(14,35,82,0.82) 100%), url('{{ url_for('static', filename='campus_bg.jpg') }}');">
+    <div></div> {# spacer for flex-between #}
+
+    <div class="hero-center-content">
+      <div class="logo-glass-shield">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="#ffffff" aria-hidden="true">
+          <path d="M12 2L1 7h22L12 2z"/>
+          <rect x="2" y="8" width="20" height="2"/>
+          <rect x="4" y="11" width="2.5" height="8"/>
+          <rect x="9" y="11" width="2.5" height="8"/>
+          <rect x="14" y="11" width="2.5" height="8"/>
+          <rect x="19" y="11" width="2.5" height="8"/>
+          <rect x="2" y="20" width="20" height="2"/>
+        </svg>
+      </div>
+      <h1 class="hero-headline">FacultyFlow</h1>
+      <p class="hero-subline">Leave Management &amp; Academic Scheduling System</p>
+      <div class="college-pill">KLS VDIT, Haliyal</div>
+    </div>
+
+    <div class="hero-bottom-tagline">
+      Simpler Approvals <span>✦</span> Smarter Scheduling <span>✦</span> Better Academic Flow
+    </div>
+  </div>
+
+  {# Right Pane: Floating White Card on White Background (Screenshot 1) #}
+  <div class="login-form-pane">
+    <div class="floating-login-card">
+      <h2 class="form-title">{{ 'Welcome Back!' if mode == 'login' else ('Forgot Password?' if mode == 'forgot' else 'Verify Security Code') }}</h2>
+      <p class="form-subtitle">
+        {{ 'Login to your account' if mode == 'login' else ('We will send a verification code to your registered email.' if mode == 'forgot' else 'Enter the 6-digit code sent to your email.') }}
+      </p>
+
+      <form method="post" class="login-actual-form">
+        {{ csrf() }}
+
+        {% if mode in ['login', 'forgot'] %}
+          <div class="field-wrap">
+            <label for="email-field">Email / Username</label>
+            <input id="email-field" type="text" name="email" placeholder="Enter your email or username" required autocomplete="username" value="{{ request.form.get('email', '') }}">
+          </div>
+        {% endif %}
+
+        {% if mode == 'reset' %}
+          <div class="field-wrap">
+            <label for="code-field">Verification Code</label>
+            <input id="code-field" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" placeholder="Enter 6-digit OTP">
+          </div>
+        {% endif %}
+
+        {% if mode != 'forgot' %}
+          <div class="field-wrap">
+            <label for="password-field">{{ 'Password' if mode == 'login' else 'New Password' }}</label>
+            <input id="password-field" type="password" name="password" placeholder="Enter your password" required {% if mode == 'reset' %}minlength="6"{% endif %} autocomplete="{{ 'current-password' if mode == 'login' else 'new-password' }}">
+          </div>
+        {% endif %}
+
+        {% with messages=get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="auth-inline-alert {{ category }}" role="alert">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% if mode == 'login' %}
+          <div class="row-aux">
+            <label class="check-remember">
+              <input type="checkbox" name="remember">
+              <span>Remember me</span>
+            </label>
+            <a href="{{ url_for('forgot') }}" class="link-forgot">Forgot password?</a>
+          </div>
+        {% endif %}
+
+        <button class="btn-dark-login" type="submit">
+          {{ 'Login' if mode == 'login' else ('Send Verification Code' if mode == 'forgot' else 'Reset Password') }}
+        </button>
+      </form>
+
+      {% if mode != 'login' %}
+        <div class="sub-back-link">
+          <a href="{{ url_for('login') }}">← Back to sign in</a>
+          {% if mode == 'reset' %}
+            · <a href="{{ url_for('forgot') }}">Resend code</a>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="admin-help-text">
+          Don't have an account? <span class="admin-blue">Contact Admin</span>
+        </div>
+      {% endif %}
+
+      {% if demo %}
+        <details class="demo-card-details">
+          <summary>✦ Demo Accounts (Password: <b>College@123</b>)</summary>
+          <div class="demo-role-pills">
+            {% for r in roles %}
+              <button type="button" class="demo-pill-btn" onclick="document.getElementById('email-field').value='{{ r }}@college.edu';document.getElementById('password-field').value='College@123';">{{ r }}@college.edu</button>
+            {% endfor %}
+          </div>
+        </details>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

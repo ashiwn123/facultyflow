@@ -1,0 +1,212 @@
+{
+  "source": "https://www.india.gov.in/calendar/karnataka",
+  "year": 2026,
+  "retrieved": "2026-10-06",
+  "holidays": [
+    {
+      "date": "2026-01-01",
+      "name": "New Year",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-01-15",
+      "name": "Uttarayana Punyakala, Makara Sankranti Festival",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-01-26",
+      "name": "Republic Day",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-01-27",
+      "name": "Sri Madvanavami",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-02-04",
+      "name": "Shab-E-Barath",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-03-02",
+      "name": "Holi Festival",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-03-17",
+      "name": "Shab-E-Qadar",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-03-19",
+      "name": "Ugadi Festival",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-03-20",
+      "name": "Jumat-Ul-Wida",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-03-21",
+      "name": "Khutub-E-Ramzan",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-03-23",
+      "name": "Devara Dasemaiha Jayanti",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-03-27",
+      "name": "Sri Ramanavami",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-03-31",
+      "name": "Mahaveera Jayanti",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-04-03",
+      "name": "Good Friday",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-04-04",
+      "name": "Holy Saturday",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-04-14",
+      "name": "Dr. B.R. Ambedkar Jayanti",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-04-20",
+      "name": "Basava Jayanti, Akshaya Tritiya",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-04-21",
+      "name": "Sri Shankaracharya Jayanti",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-04-22",
+      "name": "Sri Ramanujacharya Jayanti",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-05-01",
+      "name": "May Day",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-05-28",
+      "name": "Bakrid (Eid-Ul-Zuha)",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-06-26",
+      "name": "Last Day of Moharam",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-08-15",
+      "name": "Independence Day",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-08-21",
+      "name": "Varamahalakshmi Vrata",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-08-26",
+      "name": "Eid-Milad",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-08-27",
+      "name": "Yajur Upakarma",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-08-28",
+      "name": "Brahma Shri Narayana Guru Jayanti, Raksha Bandhan",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-09-04",
+      "name": "Sri Krishna Janmashtami",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-09-08",
+      "name": "Kanya Mariamma Jayanti",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-09-14",
+      "name": "Varasiddhi Vinayaka Vrata",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-09-17",
+      "name": "Vishwakarma Jayanti",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-09-25",
+      "name": "Ananta Padmanabha Vrata",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-10-02",
+      "name": "Gandhi Jayanti",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-10-20",
+      "name": "Mahanavami, Ayudhapooja",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-10-21",
+      "name": "Vijayadasami",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-11-10",
+      "name": "Balipadyami, Deepavali",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-11-24",
+      "name": "Guru Nanak Jayanti",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-11-26",
+      "name": "Huttari Festival",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-11-27",
+      "name": "Kannadasa Jayanti",
+      "type": "gazetted"
+    },
+    {
+      "date": "2026-12-24",
+      "name": "Christmas Eve",
+      "type": "restricted"
+    },
+    {
+      "date": "2026-12-25",
+      "name": "Christmas",
+      "type": "gazetted"
+    }
+  ]
+}

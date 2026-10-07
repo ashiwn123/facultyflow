@@ -1,0 +1,526 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <span class="eyebrow">{{ user.role|upper }} DASHBOARD</span>
+    <h1>Good morning, {{ user.name }} <span class="wave">👋</span></h1>
+    <p class="muted">
+      {% if user.role == 'principal' %}
+        College-wide leave overview, staff balance tracking, and final approval queue.
+      {% elif user.role == 'teacher' %}
+        Faculty workspace · Track your leaves, teaching schedule, and student approvals.
+      {% elif user.role == 'hod' %}
+        Department administration · Leave slots, department staff, and approvals.
+      {% elif user.role == 'student' %}
+        Student workspace · Track your classes, attendance, and leave requests.
+      {% else %}
+        Administration workspace · Manage accounts, policies, and college operations.
+      {% endif %}
+    </p>
+  </div>
+  <div class="heading-actions">
+    {% if user.role not in ['admin', 'principal'] %}
+      <a class="button primary" href="{{ url_for('apply_leave') }}">＋ Apply for leave</a>
+    {% endif %}
+    {% if user.role in ['teacher', 'hod', 'dean', 'principal'] %}
+      <a class="button ghost-button" href="{{ url_for('leaves', view='approvals') }}">✓ Pending approvals</a>
+    {% endif %}
+  </div>
+</div>
+
+{# 1. Top 4 Stat Cards #}
+<div class="stats-grid">
+  {% if user.role == 'principal' %}
+    <div class="stat-card amber">
+      <span class="stat-icon">⏳</span>
+      <span>Pending Final Approval</span>
+      <strong>{{ principal_data.final_approvals|length }}</strong>
+      <small>Requests awaiting your signature</small>
+    </div>
+    <div class="stat-card mint">
+      <span class="stat-icon">✓</span>
+      <span>Approved Today</span>
+      <strong>{{ principal_data.approved_today }}</strong>
+      <small>Granted across all departments</small>
+    </div>
+    <div class="stat-card rose">
+      <span class="stat-icon">✕</span>
+      <span>Rejected Today</span>
+      <strong>{{ principal_data.rejected_today }}</strong>
+      <small>Declined requests today</small>
+    </div>
+    <div class="stat-card lavender">
+      <span class="stat-icon">👥</span>
+      <span>Faculty on Leave</span>
+      <strong>{{ principal_data.faculty_on_leave|length }}</strong>
+      <small>Staff absent today</small>
+    </div>
+  {% elif user.role == 'teacher' %}
+    <div class="stat-card amber">
+      <span class="stat-icon">▤</span>
+      <span>Pending Requests</span>
+      <strong>{{ stats[0] }}</strong>
+      <small>In approval workflow or queue</small>
+    </div>
+    <div class="stat-card mint">
+      <span class="stat-icon">✓</span>
+      <span>Approved Requests</span>
+      <strong>{{ stats[1] }}</strong>
+      <small>Granted this calendar year</small>
+    </div>
+    <div class="stat-card rose">
+      <span class="stat-icon">⊘</span>
+      <span>Rejected Requests</span>
+      <strong>{{ stats[2] }}</strong>
+      <small>Returned with feedback</small>
+    </div>
+    <div class="stat-card lavender">
+      <span class="stat-icon">🎓</span>
+      <span>My Students</span>
+      <strong>{{ teacher_data.my_students|length }}</strong>
+      <small>Class advisees in your care</small>
+    </div>
+  {% elif user.role == 'student' %}
+    <div class="stat-card amber">
+      <span class="stat-icon">▤</span>
+      <span>My Pending</span>
+      <strong>{{ stats[0] }}</strong>
+      <small>With your class teacher</small>
+    </div>
+    <div class="stat-card mint">
+      <span class="stat-icon">✓</span>
+      <span>Leaves Approved</span>
+      <strong>{{ stats[1] }}</strong>
+      <small>Sanctioned requests</small>
+    </div>
+    <div class="stat-card lavender">
+      <span class="stat-icon">📅</span>
+      <span>Days Taken</span>
+      <strong>{{ student_data.days_taken }}</strong>
+      <small>Total leave days this year</small>
+    </div>
+    <div class="stat-card ocean">
+      <span class="stat-icon">🏫</span>
+      <span>Enrolled Class</span>
+      <strong style="font-size: 18px; margin: 4px 0;">{{ student_data.my_class }}</strong>
+      <small>{{ user.department }}</small>
+    </div>
+  {% else %}
+    <div class="stat-card amber">
+      <span class="stat-icon">▤</span>
+      <span>Pending Requests</span>
+      <strong>{{ stats[0] }}</strong>
+      <small>Awaiting decision or slot</small>
+    </div>
+    <div class="stat-card mint">
+      <span class="stat-icon">✓</span>
+      <span>Approved Requests</span>
+      <strong>{{ stats[1] }}</strong>
+      <small>Granted in scope</small>
+    </div>
+    <div class="stat-card rose">
+      <span class="stat-icon">⊘</span>
+      <span>Rejected Requests</span>
+      <strong>{{ stats[2] }}</strong>
+      <small>Declined</small>
+    </div>
+    <div class="stat-card lavender">
+      <span class="stat-icon">👥</span>
+      <span>Members in Scope</span>
+      <strong>{{ people|length }}</strong>
+      <small>College personnel</small>
+    </div>
+  {% endif %}
+</div>
+
+{# 2. Middle Row: Role-tailored Widget Cards (Slots, Request status, Donut breakdown) #}
+<div class="dashboard-widgets-grid">
+  {% if user.role == 'principal' %}
+    {# Principal Donut Chart Breakdown #}
+    <section class="card widget-card">
+      <div class="card-heading">
+        <div>
+          <h2>Leave Type Distribution</h2>
+          <p class="muted">Distribution across college approved leaves</p>
+        </div>
+      </div>
+      <div class="distribution-list">
+        {% for item in principal_data.distribution %}
+          <div class="dist-row">
+            <div class="dist-label">
+              <span class="dist-dot" style="background: {{ item.color }};"></span>
+              <strong>{{ item.code }}</strong>
+              <small>{{ item.label }}</small>
+            </div>
+            <div class="dist-bar-wrap">
+              <div class="dist-bar" style="width: {{ item.percent }}%; background: {{ item.color }};"></div>
+            </div>
+            <div class="dist-val">{{ item.count }} ({{ item.percent }}%)</div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# Principal Faculty on Leave Today #}
+    <section class="card widget-card">
+      <div class="card-heading">
+        <div>
+          <h2>Faculty on Leave Today</h2>
+          <p class="muted">{{ today }} · Active absences</p>
+        </div>
+        <span class="badge neutral">{{ principal_data.faculty_on_leave|length }} active</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Faculty</th><th>Department</th><th>Type</th><th>Duration</th></tr>
+          </thead>
+          <tbody>
+            {% for l in principal_data.faculty_on_leave %}
+              <tr>
+                <td><strong>{{ l.name }}</strong></td>
+                <td>{{ l.department }}</td>
+                <td><span class="badge neutral">{{ l.type }}</span></td>
+                <td>{{ l.start }} → {{ l.end }} <small>({{ l.days }}d)</small></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4" class="empty">No faculty members on leave today. Full attendance! 🌟</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  {% elif user.role == 'teacher' or user.role == 'staff' %}
+    {# Slot Availability Ring (Screen 2 & 3) #}
+    <section class="card widget-card slot-card">
+      <div class="card-heading">
+        <div>
+          <h2>Leave Slot Availability</h2>
+          <p class="muted">{{ user.department }} Department quota</p>
+        </div>
+      </div>
+      <div class="slot-display">
+        <div class="slot-circle">
+          <div class="slot-circle-inner">
+            <strong>{{ slot_info.available }}/{{ slot_info.capacity }}</strong>
+            <small>Slots Free</small>
+          </div>
+        </div>
+        <div class="slot-details">
+          <div class="slot-stat-row">
+            <span>Total Slots:</span>
+            <strong>{{ slot_info.capacity }}</strong>
+          </div>
+          <div class="slot-stat-row">
+            <span>Occupied Today:</span>
+            <strong style="color: #ef4444;">{{ slot_info.occupied }}</strong>
+          </div>
+          <div class="slot-stat-row">
+            <span>Available:</span>
+            <strong style="color: #10b981;">{{ slot_info.available }}</strong>
+          </div>
+          <a href="{{ url_for('queue') }}" class="text-button" style="margin-top: 8px;">View Queue Status →</a>
+        </div>
+      </div>
+    </section>
+
+    {# Your Current Request Status Tracker (Screen 2 & 4) #}
+    <section class="card widget-card current-request-card">
+      <div class="card-heading">
+        <div>
+          <h2>Your Current Request</h2>
+          <p class="muted">Active leave application tracking</p>
+        </div>
+        {% if current_request %}
+          {{ badge(current_request.status) }}
+        {% endif %}
+      </div>
+      {% if current_request %}
+        <div class="request-hero">
+          <div class="request-hero-id">
+            <span class="ref-badge">{{ current_request.reference }}</span>
+            <strong>{{ current_request.type }} Leave · {{ current_request.days }} day{{ 's' if current_request.days != 1 }}</strong>
+            <small>{{ current_request.start }} → {{ current_request.end }}</small>
+          </div>
+          {% if queue_pos %}
+            <div class="queue-chip">
+              <span>Queue position</span>
+              <strong>#{{ queue_pos }}</strong>
+            </div>
+          {% endif %}
+        </div>
+        <div class="progress" style="margin-top: 14px;">
+          {% for stage in current_request.stages %}
+            <span class="{{ 'current' if current_request.status == stage }}">{{ stage|title }}</span>
+          {% endfor %}
+        </div>
+        <p class="muted" style="margin: 12px 0 0; font-size: 13px;">Reason: “{{ current_request.reason }}”</p>
+      {% else %}
+        <div class="empty-request-box">
+          <span style="font-size: 32px;">🌴</span>
+          <p>You have no active or pending leave applications.</p>
+          <a href="{{ url_for('apply_leave') }}" class="button primary" style="margin-top: 10px;">Apply for Leave</a>
+        </div>
+      {% endif %}
+    </section>
+
+  {% elif user.role == 'student' %}
+    {# Student Advisor Card #}
+    <section class="card widget-card">
+      <div class="card-heading">
+        <div>
+          <h2>My Class Teacher</h2>
+          <p class="muted">Your academic advisor and leave approver</p>
+        </div>
+      </div>
+      {% if student_data.advisor %}
+        <div class="advisor-box">
+          <span class="avatar large">{% if student_data.advisor.photo %}<img src="{{ student_data.advisor.photo }}" alt="{{ student_data.advisor.name }}" class="avatar-img">{% else %}{{ student_data.advisor.name[:1] }}{% endif %}</span>
+          <div>
+            <h3>{{ student_data.advisor.name }}</h3>
+            <p class="muted">Department of {{ student_data.advisor.department }}</p>
+            <p style="margin-top: 6px;"><a href="mailto:{{ student_data.advisor.email }}">📧 {{ student_data.advisor.email }}</a></p>
+          </div>
+        </div>
+      {% else %}
+        <p class="empty">No class teacher assigned yet. Contact your department administrator.</p>
+      {% endif %}
+    </section>
+
+    {# Student Leave Status #}
+    <section class="card widget-card">
+      <div class="card-heading">
+        <div>
+          <h2>My Active Leave</h2>
+          <p class="muted">Status with class advisor</p>
+        </div>
+      </div>
+      {% if current_request %}
+        <div class="request-hero">
+          <div class="request-hero-id">
+            <span class="ref-badge">{{ current_request.reference }}</span>
+            <strong>{{ current_request.type }} Leave ({{ current_request.days }} days)</strong>
+            <small>{{ current_request.start }} → {{ current_request.end }}</small>
+          </div>
+          {{ badge(current_request.status) }}
+        </div>
+        <p class="muted" style="margin-top: 10px;">{{ current_request.reason }}</p>
+      {% else %}
+        <p class="empty">No active leave requests. 100% on schedule.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+</div>
+
+{# 3. Third Row: Deep Table Sections #}
+<div class="dashboard-grid" style="margin-top: 24px;">
+
+  {% if user.role == 'principal' %}
+    {# Principle Requirement: See how many leaves staff have (Teachers and Other) #}
+    <section class="card full-width-card">
+      <div class="card-heading">
+        <div>
+          <h2>Staff Leave Balances & Quota</h2>
+          <p class="muted">Detailed leave tracking for all faculty and staff members</p>
+        </div>
+        <span class="badge neutral">{{ principal_data.staff_list|length }} Staff members</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Staff member</th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>CL Available</th>
+              <th>EL Available</th>
+              <th>Total Taken ({{ today[:4] }})</th>
+              <th>Pending Requests</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in principal_data.staff_list %}
+              <tr>
+                <td><strong>{{ s.name }}</strong><small>{{ s.email }}</small></td>
+                <td><span class="badge neutral">{{ s.role|title }}</span></td>
+                <td>{{ s.department }}</td>
+                <td><strong style="color: #3b82f6;">{{ s.leave_summary.cl_remaining }}</strong> / 12</td>
+                <td><strong style="color: #10b981;">{{ s.leave_summary.el_remaining }}</strong> / 15</td>
+                <td><strong>{{ s.leave_summary.total_taken }}</strong> days</td>
+                <td>
+                  {% if s.leave_summary.pending_count > 0 %}
+                    <span class="badge amber">{{ s.leave_summary.pending_count }} Pending</span>
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="7" class="empty">No staff records found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {# Principle Requirement: College Timetable Overview #}
+    <section class="card full-width-card" style="margin-top: 20px;">
+      <div class="card-heading">
+        <div>
+          <h2>College Timetable Overview</h2>
+          <p class="muted">Teaching schedules across classrooms and departments</p>
+        </div>
+        <a href="{{ url_for('timetable') }}">Full Timetable ↗</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Day</th><th>Time</th><th>Subject</th><th>Teacher</th><th>Department</th><th>Class & Room</th></tr>
+          </thead>
+          <tbody>
+            {% for s in principal_data.timetable %}
+              <tr>
+                <td><strong>{{ ['Mon','Tue','Wed','Thu','Fri'][s.day] }}</strong></td>
+                <td>{{ s.start_time }} – {{ s.end_time }}</td>
+                <td><strong>{{ s.subject }}</strong></td>
+                <td>{{ s.teacher }}</td>
+                <td>{{ s.department }}</td>
+                <td>{{ s.class_name }} · Room {{ s.room }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="empty">No timetable entries scheduled.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  {% elif user.role == 'teacher' %}
+    {# Teacher Requirement: My Students & Student Leave Requests #}
+    <section class="card full-width-card">
+      <div class="card-heading">
+        <div>
+          <h2>Student Leave Approvals</h2>
+          <p class="muted">Requests from your student advisees awaiting your review</p>
+        </div>
+        {% if teacher_data.pending_student_leaves %}
+          <span class="badge amber">{{ teacher_data.pending_student_leaves|length }} to review</span>
+        {% endif %}
+      </div>
+      {% if teacher_data.pending_student_leaves %}
+        {{ leave_table(teacher_data.pending_student_leaves) }}
+      {% else %}
+        <p class="empty">No student leave requests pending your approval right now. All caught up! 👍</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-heading">
+        <div>
+          <h2>My Advisee Students</h2>
+          <p class="muted">Students assigned to your care</p>
+        </div>
+        <span class="badge neutral">{{ teacher_data.my_students|length }} students</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Class</th></tr></thead>
+          <tbody>
+            {% for s in teacher_data.my_students %}
+              <tr>
+                <td><strong>{{ s.name }}</strong></td>
+                <td>{{ s.email }}</td>
+                <td><span class="badge neutral">{{ s.class_name or 'General' }}</span></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="3" class="empty">No students assigned to your advisorship yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-heading">
+        <div>
+          <h2>My Teaching Schedule</h2>
+          <p class="muted">Weekly classes</p>
+        </div>
+        <a href="{{ url_for('timetable') }}">View all ↗</a>
+      </div>
+      {% for s in sessions %}
+        <div class="schedule-row">
+          <span class="time">{{ ['Mon','Tue','Wed','Thu','Fri'][s.day] }}<small>{{ s.start_time }}</small></span>
+          <div>
+            <strong>{{ s.subject }}</strong>
+            <small>{{ s.class_name }} · Room {{ s.room }}</small>
+          </div>
+          <span class="badge neutral">{{ s.teacher }}</span>
+        </div>
+      {% else %}
+        <p class="empty">No classes scheduled yet.</p>
+      {% endfor %}
+    </section>
+
+  {% elif user.role == 'student' %}
+    <section class="card full-width-card">
+      <div class="card-heading">
+        <div>
+          <h2>My Class Timetable</h2>
+          <p class="muted">Scheduled lectures for {{ student_data.my_class }}</p>
+        </div>
+        <a href="{{ url_for('timetable') }}">Full Timetable ↗</a>
+      </div>
+      {% for s in sessions %}
+        <div class="schedule-row">
+          <span class="time">{{ ['Mon','Tue','Wed','Thu','Fri'][s.day] }}<small>{{ s.start_time }} – {{ s.end_time }}</small></span>
+          <div>
+            <strong>{{ s.subject }}</strong>
+            <small>Instructor: {{ s.teacher }} · Room {{ s.room }}</small>
+          </div>
+          <span class="badge neutral">{{ s.department }}</span>
+        </div>
+      {% else %}
+        <p class="empty">No class timetable scheduled yet.</p>
+      {% endfor %}
+    </section>
+
+    <section class="card full-width-card" style="margin-top: 20px;">
+      <div class="card-heading">
+        <div>
+          <h2>My Leave Requests History</h2>
+          <p class="muted">All leave applications submitted this year</p>
+        </div>
+      </div>
+      {{ leave_table(student_data.my_leaves) }}
+    </section>
+
+  {% else %}
+    {# Generic / HOD / Admin View #}
+    <section class="card">
+      <div class="card-heading">
+        <div>
+          <h2>Recent Leave Requests</h2>
+          <p class="muted">Overview of requests in your scope</p>
+        </div>
+        <a href="{{ url_for('leaves', view='approvals') if user.role in ['hod','dean'] else url_for('leaves') }}">View all ↗</a>
+      </div>
+      {{ leave_table(leaves) }}
+    </section>
+
+    <section class="card">
+      <div class="card-heading">
+        <h2>Quick Actions</h2>
+      </div>
+      <div class="quick-grid">
+        <a href="{{ url_for('leaves') }}"><span>▤</span>My requests</a>
+        <a href="{{ url_for('balance') }}"><span>◴</span>Leave balance</a>
+        <a href="{{ url_for('calendar') }}"><span>▦</span>Calendar</a>
+        <a href="{{ url_for('notifications') }}"><span>♧</span>Notifications</a>
+      </div>
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}

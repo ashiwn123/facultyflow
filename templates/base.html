@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ title or 'Welcome' }} · FacultyFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261006-5') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css', v='20261006-7') }}">
+  {% block styles %}{% endblock %}
+</head>
+<body>
+{% macro csrf() %}<input type="hidden" name="csrf" value="{{ session.csrf }}">{% endmacro %}
+{% macro badge(status) %}<span class="badge {{ status }}">{{ 'Waiting for slot' if status == 'waiting' else ('Pending ' ~ status|title if status in ['hod','dean','principal','teacher'] else status|title) }}</span>{% endmacro %}
+{% macro leave_table(leaves, actions=false) %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Request / Applicant</th>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in leaves %}
+      <tr>
+        <td>
+          <strong>{{ l.reference }}</strong>
+          <small>{{ l.name }} · {{ l.department }}</small>
+        </td>
+        <td>
+          {{ l.start }}
+          <small>{{ l.days }} day{{ 's' if l.days != 1 }}</small>
+        </td>
+        <td><span class="badge neutral">{{ l.type }}</span></td>
+        <td>{{ badge(l.status) }}</td>
+        <td>
+          <details>
+            <summary>View</summary>
+            <div class="request-detail">
+              <p><strong>Reason:</strong> {{ l.reason }}</p>
+              <p class="muted">{{ l.start }} → {{ l.end }} · {{ l.department }}</p>
+              <div class="progress">
+                {% for stage in l.stages %}
+                  <span class="{{ 'current' if l.status == stage }}">{{ stage|title }}</span>
+                {% endfor %}
+              </div>
+              {% for h in l.history %}
+                <p class="muted" style="margin-top: 4px;">{{ h.by }} ({{ h.role|title }}) · {{ h.action|title }} · {{ h.note }}</p>
+              {% endfor %}
+              {% if can_approve(l) %}
+                <form method="post" action="{{ url_for('decision', lid=l._id) }}" style="margin-top: 10px;">
+                  {{ csrf() }}
+                  <input name="note" placeholder="Decision note (required if rejecting)" maxlength="500">
+                  <div class="row" style="margin-top: 6px;">
+                    <button name="action" value="approve" class="success-button">Approve</button>
+                    <button name="action" value="reject" class="danger-button">Reject</button>
+                  </div>
+                </form>
+              {% endif %}
+              {% if l.user_id == user._id and l.status not in ['rejected','cancelled'] and l.start >= today %}
+                <form method="post" action="{{ url_for('cancel', lid=l._id) }}" style="margin-top: 8px;">
+                  {{ csrf() }}
+                  <button class="text-button danger">Cancel request</button>
+                </form>
+              {% endif %}
+            </div>
+          </details>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5" class="empty">No requests to display. You're all caught up.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% if user %}
+<aside class="sidebar">
+  {# Top Brand Logo: Rounded Blue Badge with White Classical University Pillars #}
+  <a class="brand" href="{{ url_for('dashboard') }}">
+    <div class="app-logo-badge">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+        <path d="M12 2L1 7h22L12 2z"/>
+        <rect x="2" y="8" width="20" height="2"/>
+        <rect x="4" y="11" width="2.5" height="8"/>
+        <rect x="9" y="11" width="2.5" height="8"/>
+        <rect x="14" y="11" width="2.5" height="8"/>
+        <rect x="19" y="11" width="2.5" height="8"/>
+        <rect x="2" y="20" width="20" height="2"/>
+      </svg>
+    </div>
+    <span class="app-logo-title">FacultyFlow</span>
+  </a>
+
+  {# User Profile Identity Pill (Screens 2 - 16) #}
+  <div class="identity">
+    <div class="avatar-ring">
+      <span class="avatar">
+        {% if user.photo %}
+          <img src="{{ user.photo }}" alt="{{ user.name }}" class="avatar-img">
+        {% else %}
+          {{ user.name[:1] }}
+        {% endif %}
+      </span>
+      <span class="online-indicator"></span>
+    </div>
+    <div class="identity-meta">
+      <strong>{{ user.name }}</strong>
+      <small>{{ user.role|title }} · {{ user.department }}</small>
+    </div>
+  </div>
+
+  {# Navigation menu #}
+  <nav class="sidebar-nav">
+    <a class="nav-item {{ 'active' if request.endpoint == 'dashboard' and not request.args.get('view') }}" href="{{ url_for('dashboard') }}">
+      <span class="nav-icon">◈</span>
+      <span>Dashboard</span>
+    </a>
+
+    {% if user.role not in ['admin', 'principal'] %}
+      <a class="nav-item {{ 'active' if request.endpoint == 'apply_leave' }}" href="{{ url_for('apply_leave') }}">
+        <span class="nav-icon">⊕</span>
+        <span>Apply Leave</span>
+      </a>
+    {% endif %}
+
+    <a class="nav-item {{ 'active' if request.endpoint == 'leaves' and not request.args.get('view') }}" href="{{ url_for('leaves') }}">
+      <span class="nav-icon">▤</span>
+      <span>My Leaves</span>
+    </a>
+
+    <a class="nav-item {{ 'active' if request.endpoint == 'timetable' }}" href="{{ url_for('timetable') }}">
+      <span class="nav-icon">▦</span>
+      <span>Timetable</span>
+    </a>
+
+    <a class="nav-item {{ 'active' if request.endpoint == 'notifications' }}" href="{{ url_for('notifications') }}">
+      <span class="nav-icon">♧</span>
+      <span>Notifications</span>
+      {% if unread %}
+        <span class="nav-pill-badge">{{ unread }}</span>
+      {% endif %}
+    </a>
+
+    <a class="nav-item {{ 'active' if request.endpoint == 'balance' }}" href="{{ url_for('balance') }}">
+      <span class="nav-icon">◴</span>
+      <span>Leave Balance</span>
+    </a>
+
+    {% if user.role in ['teacher', 'hod', 'dean', 'principal'] %}
+      <a class="nav-item {{ 'active' if request.args.get('view') == 'approvals' }}" href="{{ url_for('leaves', view='approvals') }}">
+        <span class="nav-icon">✓</span>
+        <span>Pending Approvals</span>
+      </a>
+    {% endif %}
+
+    {% if user.role != 'student' %}
+      <a class="nav-item {{ 'active' if request.endpoint == 'queue' }}" href="{{ url_for('queue') }}">
+        <span class="nav-icon">≋</span>
+        <span>Leave Slot Queue</span>
+      </a>
+    {% endif %}
+
+    {% if user.role in ['teacher', 'hod', 'dean', 'principal', 'admin'] %}
+      <a class="nav-item {{ 'active' if request.endpoint == 'people' }}" href="{{ url_for('people') }}">
+        <span class="nav-icon">♙</span>
+        <span>{{ 'My Students' if user.role == 'teacher' else 'College Directory' }}</span>
+      </a>
+    {% endif %}
+
+    {% if user.role in ['hod', 'admin'] %}
+      <a class="nav-item {{ 'active' if request.endpoint == 'substitutes' }}" href="{{ url_for('substitutes') }}">
+        <span class="nav-icon">⇄</span>
+        <span>Substitutes</span>
+      </a>
+    {% endif %}
+
+    <a class="nav-item {{ 'active' if request.endpoint == 'calendar' }}" href="{{ url_for('calendar') }}">
+      <span class="nav-icon">▦</span>
+      <span>College Calendar</span>
+    </a>
+
+    {% if user.role == 'admin' %}
+      <a class="nav-item {{ 'active' if request.endpoint == 'admin' }}" href="{{ url_for('admin') }}">
+        <span class="nav-icon">⚙</span>
+        <span>Manage Accounts</span>
+      </a>
+    {% endif %}
+  </nav>
+
+  {# Sidebar Footer (Screen 2: Settings & Logout) #}
+  <div class="sidebar-bottom">
+    <a class="bottom-link" href="{{ url_for('profile') }}">
+      <span>⚙</span> Settings
+    </a>
+    <form method="post" action="{{ url_for('logout') }}" style="display: inline-block; width: 100%;">
+      {{ csrf() }}
+      <button type="submit" class="logout-link-btn">
+        <span>↪</span> Logout
+      </button>
+    </form>
+  </div>
+</aside>
+{% endif %}
+
+<main class="{{ 'workspace' if user else 'auth-main' }}">
+  {% if user %}
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-breadcrumb">Academics <span class="muted">/ {{ title }}</span></span>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-date">{{ today }}</span>
+        <a class="notification-bubble" href="{{ url_for('notifications') }}" title="Notifications">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          {% if unread %}
+            <span class="dot-count">{{ unread }}</span>
+          {% endif %}
+        </a>
+        <div class="topbar-avatar" title="Click to view photo" role="button" tabindex="0" data-view-photo="1" data-name="{{ user.name }}" data-role="{{ user.role|title }}">
+          {% if user.photo %}
+            <img src="{{ user.photo }}" alt="{{ user.name }}" class="avatar-img">
+          {% else %}
+            {{ user.name[:1] }}
+          {% endif %}
+        </div>
+      </div>
+    </header>
+  {% endif %}
+
+  <div class="{{ 'page' if user else 'auth-page-wrap' }}">
+    {% if user %}
+      {% if demo %}
+        <div class="demo-banner">
+          <span>DEMO WORKSPACE · Sample accounts enabled (changes reset when server restarts)</span>
+        </div>
+      {% endif %}
+
+      {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}
+        <div role="alert" class="flash {{ category }}" data-auto-dismiss="8000">
+          <span class="flash-icon" aria-hidden="true">
+            {% if category == 'success' %}✓{% elif category == 'error' %}⚠️{% else %}ℹ️{% endif %}
+          </span>
+          <span class="flash-text">{{ message }}</span>
+          <button type="button" class="flash-close-btn" aria-label="Dismiss notification" title="Dismiss">✕</button>
+        </div>
+      {% endfor %}{% endwith %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  {% if user %}
+    <footer class="app-footer">
+      <span>FacultyFlow · Leave Management &amp; Academic Scheduling System</span>
+    </footer>
+  {% endif %}
+</main>
+
+{# Global Photo Lightbox Dialog #}
+<dialog id="photo-lightbox-dialog" class="photo-lightbox-dialog" aria-label="Profile Photo">
+  <div class="lightbox-card">
+    <button type="button" class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Close photo preview">✕</button>
+    <div class="lightbox-img-container">
+      <img id="lightbox-img" src="" alt="Profile Photo" class="lightbox-display-img">
+    </div>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  // 1. Auto-dismiss flash notifications after 8 seconds & manual close on ✕ button
+  const dismissFlash = (flashEl) => {
+    if (!flashEl || flashEl.classList.contains('dismissing')) return;
+    flashEl.classList.add('dismissing');
+    setTimeout(() => {
+      flashEl.remove();
+    }, 320);
+  };
+
+  document.querySelectorAll('.flash').forEach((flash) => {
+    const closeBtn = flash.querySelector('.flash-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dismissFlash(flash);
+      });
+    }
+
+    const timeoutMs = parseInt(flash.getAttribute('data-auto-dismiss') || '8000', 10);
+    if (timeoutMs > 0) {
+      setTimeout(() => {
+        dismissFlash(flash);
+      }, timeoutMs);
+    }
+  });
+
+  // 2. Global Profile Photo Lightbox Modal
+  const lightbox = document.getElementById('photo-lightbox-dialog');
+  const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxClose = document.getElementById('lightbox-close-btn');
+
+  if (lightbox && lightboxImg) {
+    const closeLightbox = () => {
+      lightbox.classList.add('closing');
+      setTimeout(() => {
+        lightbox.classList.remove('closing');
+        lightbox.close();
+      }, 160);
+    };
+
+    window.openPhotoLightbox = (photoSrc) => {
+      if (!photoSrc) return;
+      lightboxImg.src = photoSrc;
+      lightbox.showModal();
+    };
+
+    if (lightboxClose) {
+      lightboxClose.addEventListener('click', closeLightbox);
+    }
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+
+    // Delegate clicks on viewable avatars
+    document.addEventListener('click', (e) => {
+      const avatarEl = e.target.closest('[data-view-photo], .topbar-avatar, #avatar-frame, .identity .avatar-ring, .user-cell-avatar');
+      if (!avatarEl) return;
+
+      const img = avatarEl.querySelector('img') || (avatarEl.tagName === 'IMG' ? avatarEl : null);
+      if (img && img.src && !img.src.endsWith('/#') && img.style.display !== 'none') {
+        e.preventDefault();
+        window.openPhotoLightbox(img.src);
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

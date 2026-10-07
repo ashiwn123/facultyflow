@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <span class="eyebrow">PEOPLE &amp; DEPARTMENTS</span>
+    <h1>{{ 'My students' if user.role == 'teacher' else title }}</h1>
+    <p class="muted">{{ people|length }} people in your authorized scope. Leave totals cover the current calendar year.</p>
+  </div>
+</div>
+
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Approved days</th>
+          <th>Pending requests</th>
+          <th>Remaining allowance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in people %}
+          {% set own = leaves|selectattr('user_id', 'equalto', p._id)|list %}
+          {% set approved = own|selectattr('status', 'equalto', 'approved')|list %}
+          <tr>
+            <td>
+              <div class="user-cell">
+                <span class="user-cell-avatar">
+                  {% if p.photo %}
+                    <img src="{{ p.photo }}" alt="{{ p.name }}" class="avatar-img">
+                  {% else %}
+                    {{ p.name[:1] }}
+                  {% endif %}
+                </span>
+                <div>
+                  <strong>{{ p.name }}</strong>
+                  <small>{{ p.email }}</small>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge neutral">{{ p.role|title }}</span></td>
+            <td>{{ p.department }}</td>
+            <td>
+              {% set totals = namespace(days=0) %}
+              {% for l in approved if l.start[:4] == today[:4] %}
+                {% set totals.days = totals.days + l.days %}
+              {% endfor %}
+              {{ totals.days }}
+            </td>
+            <td>{{ own|rejectattr('status', 'in', ['approved', 'rejected', 'cancelled'])|list|length }}</td>
+            <td>
+              <details>
+                <summary>View balances</summary>
+                {% for code, info in leave_types.items() %}
+                  {% set total = namespace(days=0) %}
+                  {% for l in own if l.type == code and l.start[:4] == today[:4] and l.status not in ['rejected', 'cancelled'] %}
+                    {% set total.days = total.days + l.days %}
+                  {% endfor %}
+                  <small>{{ code }}: {{ info[1] - total.days }} / {{ info[1] }}</small>
+                {% endfor %}
+              </details>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <span class="eyebrow">ADMINISTRATION</span>
+    <h1>Account management</h1>
+    <p class="muted">Create college accounts with the correct access from day one.</p>
+  </div>
+</div>
+
+<details class="card padded">
+  <summary>＋ Add college member</summary>
+  <form method="post" class="entry-form">
+    {{ csrf() }}
+    <label>Full name
+      <input name="name" required>
+    </label>
+    <label>Email
+      <input type="email" name="email" required>
+    </label>
+    <label>Role
+      <select name="role">
+        {% for r in roles %}
+          <option>{{ r }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Department
+      <input name="department" required placeholder="Computer Science">
+    </label>
+    <label>Class (students)
+      <input name="class_name" placeholder="5th Sem A">
+    </label>
+    <label>Class teacher (students)
+      <select name="advisor_id">
+        <option value="">Select teacher</option>
+        {% for p in people if p.role == 'teacher' %}
+          <option value="{{ p._id }}">{{ p.name }} · {{ p.department }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Temporary password
+      <input type="password" name="password" minlength="6" required autocomplete="new-password">
+    </label>
+    <button class="primary">Create account</button>
+  </form>
+</details>
+
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Role</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in people %}
+          <tr>
+            <td>
+              <div class="user-cell">
+                <span class="user-cell-avatar">
+                  {% if p.photo %}
+                    <img src="{{ p.photo }}" alt="{{ p.name }}" class="avatar-img">
+                  {% else %}
+                    {{ p.name[:1] }}
+                  {% endif %}
+                </span>
+                <span class="user-cell-name">{{ p.name }}</span>
+              </div>
+            </td>
+            <td>{{ p.email }}</td>
+            <td>{{ p.department }}</td>
+            <td><span class="badge neutral">{{ p.role|title }}</span></td>
+            <td class="actions-col">
+              {% if p._id != user._id %}
+                <a href="{{ url_for('admin', confirm_delete=p._id) }}" class="delete-user-btn" id="delete-{{ p._id }}" style="text-decoration: none;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/>
+                  </svg>Delete
+                </a>
+              {% else %}
+                <span class="muted you-tag">You</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if delete_target %}
+<div class="confirm-modal-overlay" id="delete-modal-overlay">
+  <a href="{{ url_for('admin') }}" class="confirm-modal-backdrop-link" aria-label="Cancel and close dialog"></a>
+  <div id="delete-dialog" class="confirm-dialog confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+    <form method="post" action="{{ url_for('delete_user', uid=delete_target._id) }}" id="delete-form">
+      {{ csrf() }}
+      <div class="confirm-icon" aria-hidden="true">🗑️</div>
+      <h2 id="delete-title">Delete this account?</h2>
+      <p class="muted">This permanently removes the account from the database, along with their leave requests, notifications and timetable entries. This cannot be undone.</p>
+      <div class="confirm-user">
+        <span class="avatar">
+          {% if delete_target.photo %}
+            <img src="{{ delete_target.photo }}" alt="" class="avatar-img">
+          {% else %}
+            {{ delete_target.name[:1] }}
+          {% endif %}
+        </span>
+        <div>
+          <strong>{{ delete_target.name }}</strong>
+          <small>{{ delete_target.email }} · {{ delete_target.role|title }}</small>
+        </div>
+      </div>
+      <div class="confirm-actions">
+        <a href="{{ url_for('admin') }}" class="ghost-button confirm-btn-cancel">Cancel</a>
+        <button type="submit" class="confirm-delete" id="delete-confirm">Yes, Delete</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <span class="eyebrow">YOUR ACCOUNT</span>
+    <h1>Profile &amp; Settings</h1>
+    <p class="muted">{{ user.name }} · {{ user.email }} · {{ user.role|title }}</p>
+  </div>
+</div>
+
+<div class="settings-grid">
+  <!-- Profile Photo Section -->
+  <section class="card padded profile-photo-card">
+    <div class="card-header-clean">
+      <h2>Profile Photo</h2>
+      <p class="muted">upload/change the profile picture</p>
+    </div>
+
+    <div class="photo-preview-wrap">
+      <div class="avatar-large-frame" id="avatar-frame" role="button" tabindex="0" title="Click to view photo">
+        {% if user.photo %}
+          <img id="avatar-preview-img" class="avatar-large-img" src="{{ user.photo }}" alt="{{ user.name }}">
+          <div id="avatar-preview-fallback" class="avatar-large-letter" style="display: none;">{{ user.name[:1] }}</div>
+          <div class="avatar-hover-hint" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>View</span>
+          </div>
+        {% else %}
+          <img id="avatar-preview-img" class="avatar-large-img" src="" alt="{{ user.name }}" style="display: none;">
+          <div id="avatar-preview-fallback" class="avatar-large-letter">{{ user.name[:1] }}</div>
+          <div class="avatar-hover-hint" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span>Upload</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="photo-info-actions">
+        <!-- Choose photo button placed ON TOP of Default initial avatar -->
+        <form method="post" enctype="multipart/form-data" id="photo-upload-form" class="photo-form-clean">
+          {{ csrf() }}
+          <input type="hidden" name="action" value="photo">
+
+          <div class="file-picker-row">
+            <label class="file-upload-btn" for="photo-input" id="file-pick-label">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              <span id="pick-text">{{ 'Change photo' if user.photo else 'Choose photo' }}</span>
+            </label>
+            <input type="file" id="photo-input" name="photo" accept="image/png, image/jpeg, image/jpg, image/webp, image/gif" style="display: none;">
+
+            <button type="submit" id="save-photo-btn" class="primary save-photo-btn" style="display: none;">
+              Save &amp; Update
+            </button>
+            <button type="button" id="cancel-photo-btn" class="cancel-photo-btn" style="display: none;">
+              Cancel
+            </button>
+          </div>
+
+          <p class="photo-limit-hint">image should be less then 30 mb</p>
+          <div id="photo-error" class="photo-error-msg" style="display: none;"></div>
+        </form>
+
+        {% if not user.photo %}
+          <div class="photo-status-badge">
+            <span class="badge neutral">
+              <span class="dot-indicator slate"></span> Default initial avatar
+            </span>
+          </div>
+        {% endif %}
+
+        {% if user.photo %}
+          <div class="remove-photo-wrap">
+            <button type="button" id="open-remove-dialog" class="remove-photo-link" aria-haspopup="dialog">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Remove photo</span>
+            </button>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- Change Password Section -->
+  <section class="card padded narrow-settings">
+    <div class="card-header-clean">
+      <h2>Change password</h2>
+      <p class="muted">Ensure your account uses a strong, private password.</p>
+    </div>
+    <form method="post" style="margin-top: 4px;">
+      {{ csrf() }}
+      <input type="hidden" name="action" value="password">
+      <label>Current password
+        <input type="password" name="current_password" required autocomplete="current-password">
+      </label>
+      <label>New password
+        <input type="password" name="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters">
+      </label>
+      <button class="primary" style="margin-top: 18px;">Update password</button>
+    </form>
+  </section>
+</div>
+
+<!-- Custom Remove Photo Modal -->
+<dialog id="remove-photo-dialog" class="confirm-dialog" aria-labelledby="remove-photo-title">
+  <form method="post" id="remove-photo-form">
+    {{ csrf() }}
+    <input type="hidden" name="action" value="photo">
+    <input type="hidden" name="remove_photo" value="1">
+
+    <div class="confirm-icon" aria-hidden="true">🗑️</div>
+
+    <h2 id="remove-photo-title" style="margin: 0 0 8px; font-size: 18px; color: #14213d; font-weight: 700;">Remove profile photo?</h2>
+    <p class="muted" style="margin: 0 0 16px; font-size: 13px; line-height: 1.5; color: #64748b;">This will delete your uploaded profile photo and restore your default initial avatar across your account.</p>
+
+    <div class="avatar-large-frame confirm-photo-frame" style="width: 128px; height: 128px; margin: 6px auto 22px; box-shadow: 0 10px 28px rgba(0,0,0,0.16); border: 4px solid #fff; outline: 2px solid #e2e8f0;">
+      {% if user.photo %}
+        <img src="{{ user.photo }}" alt="{{ user.name }}" class="avatar-large-img">
+      {% else %}
+        <span class="avatar-large-letter" style="font-size: 48px;">{{ user.name[:1] }}</span>
+      {% endif %}
+    </div>
+
+    <div class="confirm-actions">
+      <button type="button" class="ghost-button" id="remove-dialog-cancel">Cancel</button>
+      <button type="submit" class="confirm-delete" id="remove-dialog-confirm">Yes, remove photo</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  // Photo selection & live preview
+  const input = document.getElementById('photo-input');
+  const previewImg = document.getElementById('avatar-preview-img');
+  const fallbackLetter = document.getElementById('avatar-preview-fallback');
+  const saveBtn = document.getElementById('save-photo-btn');
+  const cancelBtn = document.getElementById('cancel-photo-btn');
+  const pickText = document.getElementById('pick-text');
+  const errorBox = document.getElementById('photo-error');
+
+  const initialPhotoSrc = "{{ user.photo or '' }}";
+  const hasInitialPhoto = Boolean(initialPhotoSrc);
+  const initialPickLabel = hasInitialPhoto ? 'Change photo' : 'Choose photo';
+
+  if (input) {
+    const MAX_SIZE = 30 * 1024 * 1024; // 30MB
+
+    input.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (errorBox) {
+        errorBox.style.display = 'none';
+        errorBox.textContent = '';
+      }
+
+      if (!file) return;
+
+      // Check size limit: 30MB
+      if (file.size > MAX_SIZE) {
+        if (errorBox) {
+          errorBox.textContent = 'Image exceeds limit. Image should be less then 30 mb.';
+          errorBox.style.display = 'block';
+        }
+        input.value = '';
+        if (saveBtn) saveBtn.style.display = 'none';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        return;
+      }
+
+      // Immediate live preview
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        if (previewImg) {
+          previewImg.src = evt.target.result;
+          previewImg.style.display = 'block';
+        }
+        if (fallbackLetter) fallbackLetter.style.display = 'none';
+        if (saveBtn) saveBtn.style.display = 'inline-flex';
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        if (pickText) pickText.textContent = 'Pick different photo';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        input.value = '';
+        if (hasInitialPhoto) {
+          if (previewImg) {
+            previewImg.src = initialPhotoSrc;
+            previewImg.style.display = 'block';
+          }
+          if (fallbackLetter) fallbackLetter.style.display = 'none';
+        } else {
+          if (previewImg) {
+            previewImg.src = '';
+            previewImg.style.display = 'none';
+          }
+          if (fallbackLetter) fallbackLetter.style.display = 'flex';
+        }
+        if (saveBtn) saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        if (pickText) pickText.textContent = initialPickLabel;
+        if (errorBox) {
+          errorBox.style.display = 'none';
+          errorBox.textContent = '';
+        }
+      });
+    }
+  }
+
+  // Custom Remove Photo Dialog
+  const removeDialog = document.getElementById('remove-photo-dialog');
+  const openRemoveBtn = document.getElementById('open-remove-dialog');
+  const cancelRemoveBtn = document.getElementById('remove-dialog-cancel');
+  const removeForm = document.getElementById('remove-photo-form');
+  const removeConfirmBtn = document.getElementById('remove-dialog-confirm');
+
+  if (removeDialog && openRemoveBtn) {
+    const closeDialog = () => {
+      removeDialog.classList.add('closing');
+      setTimeout(() => {
+        removeDialog.classList.remove('closing');
+        removeDialog.close();
+      }, 160);
+    };
+
+    openRemoveBtn.addEventListener('click', () => {
+      removeDialog.showModal();
+      if (cancelRemoveBtn) cancelRemoveBtn.focus();
+    });
+
+    if (cancelRemoveBtn) {
+      cancelRemoveBtn.addEventListener('click', closeDialog);
+    }
+
+    removeDialog.addEventListener('click', (e) => {
+      if (e.target === removeDialog) closeDialog();
+    });
+
+    if (removeForm && removeConfirmBtn) {
+      removeForm.addEventListener('submit', () => {
+        removeConfirmBtn.disabled = true;
+        removeConfirmBtn.textContent = 'Removing…';
+      });
+    }
+  }
+})();
+</script>
+{% endblock %}

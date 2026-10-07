@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='calendar.css', v='20261006-4') }}">{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">PLAN YOUR MONTH</span><h1>College calendar</h1></div><span class="region-pill">Karnataka · India</span></div>
+<div class="campus-calendar">
+<section class="month-board" aria-label="Monthly calendar">
+<header class="month-toolbar"><div><span class="month-year">{{ month.year }}</span><h2>{{ month.strftime('%B') }}</h2></div><div class="month-controls"><a class="today-link" href="{{ url_for('calendar') }}">Today</a><a href="{{ url_for('calendar', month=prev.strftime('%Y-%m')) }}" aria-label="Previous month">‹</a><a href="{{ url_for('calendar', month=next.strftime('%Y-%m')) }}" aria-label="Next month">›</a></div></header>
+<div class="calendar-meta"><span>Sunday-first · Select a day to explore</span><form method="get"><label for="jump-month">Jump to</label><input id="jump-month" name="month" type="month" value="{{ month.strftime('%Y-%m') }}" min="1901-01" max="2099-12"><button type="submit">Go</button></form></div>
+<div class="month-grid">
+{% for label in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}<div class="month-weekday">{{ label }}</div>{% endfor %}
+{% for week in weeks %}{% for day in week %}{% set key=day.isoformat() %}{% set hs=holiday_map[key] %}
+<a href="{{ url_for('calendar', month=day.strftime('%Y-%m'), day=key) }}" class="month-day {{ 'outside' if day.month != month.month }} {{ 'weekend' if day.weekday() in [5,6] }} {{ 'is-today' if key == today }} {{ 'selected' if day == selected }} {{ hs[0].type if hs }}" aria-label="{{ day.strftime('%A, %d %B %Y') }}{% for h in hs %}, {{ h.name }} ({{ h.type }}){% endfor %}, {{ events[key]|length }} approved leave" {% if key == today %}aria-current="date"{% endif %}>
+<span class="day-number">{{ day.day }}</span>{% if hs %}<span class="holiday-title">{{ hs[0].name }}</span><span class="holiday-dot" aria-hidden="true"></span>{% endif %}
+{% if events[key] %}<span class="leave-marker"><i></i><span>{{ events[key]|length }} on leave</span></span>{% endif %}</a>{% endfor %}{% endfor %}
+</div>
+<div class="calendar-legend"><span><i class="gazetted"></i>Gazetted holiday</span><span><i class="restricted"></i>Restricted holiday</span><span><i class="leave"></i>Approved leave</span><span><i class="today"></i>Today</span></div>
+</section>
+<aside class="calendar-aside">
+<section class="holiday-panel"><header><span class="eyebrow">KARNATAKA HOLIDAYS</span><h2>Holidays of the month</h2><p>{{ month.strftime('%B %Y') }}</p></header><div class="holiday-counts"><span><b>{{ gazetted }}</b> Gazetted</span><span><b>{{ restricted }}</b> Restricted</span></div>
+<div class="holiday-list">{% for h in holidays %}<a class="holiday-row" href="{{ url_for('calendar', month=month.strftime('%Y-%m'), day=h.date) }}"><span class="holiday-date {{ h.type }}">{{ h.date[-2:] }}</span><span><strong>{{ h.name }}</strong><small>{{ h.type|title }} holiday</small></span><span aria-hidden="true">›</span></a>{% else %}<p class="calendar-empty">{{ 'No listed holidays this month.' if holiday_data else 'Holiday dates for this year have not been loaded yet.' }}</p>{% endfor %}</div></section>
+<section class="day-panel"><span class="eyebrow">YOUR SELECTED DAY</span><h2>{{ selected.strftime('%A, %d %B') }}</h2>{% for h in holiday_map[selected.isoformat()] %}<p class="day-holiday {{ h.type }}">{{ h.name }}</p>{% endfor %}<h3>Approved leave <span>{{ events[selected.isoformat()]|length }}</span></h3>{% for event in events[selected.isoformat()] %}<div class="selected-leave"><span class="leave-avatar">{{ event.name[:1] }}</span><div><strong>{{ event.name }}</strong><small>{{ event.type }} · {{ event.start }} – {{ event.end }}</small></div></div>{% else %}<p class="calendar-empty">No approved leave for this day.</p>{% endfor %}</section>
+</aside></div>
+{% endblock %}

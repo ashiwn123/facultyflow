@@ -1,0 +1,36 @@
+# Environment variables and secrets
+.env
+.env.local
+*.env
+
+# Python virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+Thumbs.db
+.DS_Store
+
+# Temporary / Scratch files
+scratch/
+*.zip
+*.log
